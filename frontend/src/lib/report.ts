@@ -4,7 +4,7 @@
 // verdict. Apollo enforcement can only be confirmed inside Apollo itself.
 
 import { TEST_TIMEOUT_MS } from "./scenarios";
-import { HistoryEntry, Scenario } from "./types";
+import { HistoryEntry } from "./types";
 
 const APOLLO_DISCLAIMER =
   "This is a network result only — it is not evidence that Apollo allowed or blocked anything. Verify Apollo separately in the Apollo app.";
@@ -50,6 +50,34 @@ export function buildStopIdleOutcome(): string {
   return "No in-app test is currently running. Note: a link already handed to the Android browser cannot be cancelled by Threat Lab.";
 }
 
+// --- Redaction (for shared / exported reports only) -------------------------
+// The on-device history still shows full detail; only the shareable text report
+// is redacted so it cannot leak sensitive URL parameters, IP addresses or raw
+// error specifics.
+
+const IPV4 = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g;
+const IPV6 = /\b(?:[A-Fa-f0-9]{1,4}:){2,7}[A-Fa-f0-9]{1,4}\b/g;
+const URL_WITH_QUERY = /(https?:\/\/[^\s?#]+)(?:[?#][^\s]*)?/gi;
+
+// Strip query string and fragment from a destination, keeping scheme/host/path.
+export function redactUrl(value: string): string {
+  if (!value) return value;
+  const cut = value.search(/[?#]/);
+  if (cut < 0) return value;
+  return `${value.slice(0, cut)} [params redacted]`;
+}
+
+// Mask IP addresses and any query strings embedded in free-form outcome text.
+export function redactText(value: string): string {
+  if (!value) return value;
+  return value
+    .replace(URL_WITH_QUERY, (match, base) =>
+      match.length > base.length ? `${base} [params redacted]` : base,
+    )
+    .replace(IPV6, "[ip redacted]")
+    .replace(IPV4, "[ip redacted]");
+}
+
 // Redacted, human-readable text report for Android Share. Local only.
 export function buildReport(entries: HistoryEntry[]): string {
   const header = [
@@ -60,6 +88,7 @@ export function buildReport(entries: HistoryEntry[]): string {
     "",
     "NOTE: Statuses describe Threat Lab's own network activity. They are NOT",
     "Apollo security verdicts. Apollo enforcement must be verified in Apollo.",
+    "This report is redacted: URL parameters and IP addresses are removed.",
     "",
     "----------------------------------------",
   ];
@@ -68,10 +97,10 @@ export function buildReport(entries: HistoryEntry[]): string {
       `${i + 1}. ${e.scenarioLabel}`,
       `   Run ID    : ${e.id}`,
       `   Time      : ${e.startTime}`,
-      `   Target    : ${e.destination || "(none)"}`,
+      `   Target    : ${redactUrl(e.destination) || "(none)"}`,
       `   Status    : ${e.status}`,
       `   Duration  : ${(e.elapsedMs / 1000).toFixed(2)}s`,
-      `   Outcome   : ${e.outcome}`,
+      `   Outcome   : ${redactText(e.outcome)}`,
     ].join("\n");
   });
   return [...header, ...body].join("\n");

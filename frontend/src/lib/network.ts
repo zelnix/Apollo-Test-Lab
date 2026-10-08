@@ -4,6 +4,8 @@
 
 import { dnsLookup, DnsLookupResult, isDnsAvailable } from "@/modules/apollo-dns";
 
+import { withAbort } from "./async-abort";
+
 export type HttpResult = {
   httpStatus: number;
   finalUrl: string;
@@ -27,10 +29,15 @@ export async function performHttpRequest(url: string, signal: AbortSignal): Prom
 
 // Genuine Android system DNS resolution via the native Kotlin module. Throws
 // "NATIVE_DNS_UNAVAILABLE" when the native module is absent (Expo Go / web),
-// and lets real resolver errors (e.g. NXDOMAIN) propagate honestly.
-export async function performDnsLookup(hostname: string): Promise<DnsLookupResult> {
+// and lets real resolver errors (e.g. NXDOMAIN) propagate honestly. The native
+// call itself cannot be interrupted, so `withAbort` makes Stop / timeout reject
+// immediately and discards any late result so it is never recorded as Completed.
+export async function performDnsLookup(
+  hostname: string,
+  signal: AbortSignal,
+): Promise<DnsLookupResult> {
   if (!isDnsAvailable) {
     throw new Error("NATIVE_DNS_UNAVAILABLE");
   }
-  return dnsLookup(hostname);
+  return withAbort(signal, dnsLookup(hostname));
 }

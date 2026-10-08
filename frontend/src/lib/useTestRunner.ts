@@ -47,7 +47,7 @@ async function executeScenario(
       return buildBrowserOutcome(config.phishingUrl);
     }
     case "dns": {
-      const r = await performDnsLookup(config.maliciousDomain);
+      const r = await performDnsLookup(config.maliciousDomain, signal);
       return buildDnsOutcome(r.hostname, r.addresses, r.durationMs);
     }
     case "https": {

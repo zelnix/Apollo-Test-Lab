@@ -21,6 +21,14 @@ export type ScenarioKind = "browser" | "dns" | "https" | "redirect" | "stop";
 
 export type StatusAccent = "error" | "warning" | "success";
 
+// What a test's traffic is intended to exercise. This is an honest description
+// of the test's purpose/target — it is NOT a claim about what Apollo does.
+//   detection    = default target is a known test threat (e.g. Safe Browsing demo)
+//   connectivity = benign traffic that verifies DNS/HTTPS on the device path
+//   control      = negative control (ordinary, expected-successful traffic)
+//   action       = an app control, not network traffic (Stop)
+export type TestCategory = "detection" | "connectivity" | "control" | "action";
+
 export type LabConfig = {
   phishingUrl: string;
   maliciousDomain: string; // bare hostname for DNS lookup, may be ""
@@ -36,6 +44,7 @@ export type Scenario = {
   icon: string; // MaterialDesignIcons glyph name
   accent: StatusAccent;
   kind: ScenarioKind;
+  category: TestCategory;
   configKey: keyof LabConfig | null;
 };
 

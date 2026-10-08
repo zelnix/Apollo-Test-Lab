@@ -3,7 +3,7 @@
 // target validation, availability, status-transition rules, result
 // classification and formatting helpers.
 
-import { LabConfig, Scenario, ScenarioId, TestStatus } from "./types";
+import { LabConfig, Scenario, ScenarioId, TestCategory, TestStatus } from "./types";
 
 export const TEST_TIMEOUT_MS = 15000;
 export const MAX_HISTORY = 100;
@@ -16,24 +16,27 @@ export const SCENARIOS: Scenario[] = [
     icon: "link-variant",
     accent: "error",
     kind: "browser",
+    category: "detection",
     configKey: "phishingUrl",
   },
   {
     id: "malicious-domain",
     label: "Malicious Domain Test",
-    description: "Test a safe approved domain through real DNS/network lookup.",
+    description: "Resolve a configured domain through a real Android DNS lookup.",
     icon: "web",
     accent: "warning",
     kind: "dns",
+    category: "connectivity",
     configKey: "maliciousDomain",
   },
   {
     id: "suspicious-connection",
     label: "Suspicious Connection Test",
-    description: "Run a bounded HTTPS request to an approved endpoint.",
+    description: "Run a bounded HTTPS request to a configured endpoint.",
     icon: "transit-connection-variant",
     accent: "warning",
     kind: "https",
+    category: "connectivity",
     configKey: "suspiciousUrl",
   },
   {
@@ -43,6 +46,7 @@ export const SCENARIOS: Scenario[] = [
     icon: "arrow-decision",
     accent: "warning",
     kind: "redirect",
+    category: "connectivity",
     configKey: "redirectUrl",
   },
   {
@@ -52,6 +56,7 @@ export const SCENARIOS: Scenario[] = [
     icon: "shield-check",
     accent: "success",
     kind: "https",
+    category: "control",
     configKey: "safeTrafficUrl",
   },
   {
@@ -61,9 +66,40 @@ export const SCENARIOS: Scenario[] = [
     icon: "stop-circle",
     accent: "error",
     kind: "stop",
+    category: "action",
     configKey: null,
   },
 ];
+
+// Honest, short label + helper for each test category. Describes the test's
+// intent/target only — never a claim about Apollo's behaviour.
+export const CATEGORY_META: Record<
+  TestCategory,
+  { label: string; tone: "warning" | "info" | "success" | "muted"; blurb: string }
+> = {
+  detection: {
+    label: "Detection test",
+    tone: "warning",
+    blurb:
+      "Default target is a known test threat (a Safe Browsing demo page) meant to be recognised by browser/Apollo rules.",
+  },
+  connectivity: {
+    label: "Connectivity test",
+    tone: "info",
+    blurb:
+      "Benign traffic to a reachable service. Verifies DNS/HTTPS on the device path; does not by itself trigger Apollo enforcement.",
+  },
+  control: {
+    label: "Negative control",
+    tone: "success",
+    blurb: "Ordinary traffic expected to succeed. A success here is never a threat.",
+  },
+  action: {
+    label: "Control",
+    tone: "muted",
+    blurb: "An app control, not network traffic.",
+  },
+};
 
 export function getScenario(id: ScenarioId): Scenario {
   const s = SCENARIOS.find((x) => x.id === id);

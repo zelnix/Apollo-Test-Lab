@@ -34,7 +34,7 @@ const FIELDS: FieldDef[] = [
     label: "Malicious Domain (hostname)",
     kind: "hostname",
     placeholder: "e.g. test.example.com",
-    helper: "Bare hostname for a real Android system DNS lookup. Use only an authorized lab domain.",
+    helper: "Bare hostname for a real Android system DNS lookup (default: example.com, a benign connectivity check). Use an authorized threat‑test domain to exercise Apollo detection.",
     optional: true,
   },
   {
@@ -42,7 +42,7 @@ const FIELDS: FieldDef[] = [
     label: "Suspicious Connection URL",
     kind: "url",
     placeholder: "https://...",
-    helper: "Approved HTTPS endpoint for a bounded request on the device's normal network path.",
+    helper: "HTTPS endpoint for a bounded request on the device's normal network path (default: httpbin.org/get, benign). Swap for an approved threat‑test endpoint when available.",
     optional: true,
   },
   {
@@ -127,10 +127,19 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.intro}>
-          Configure the HTTPS URLs and hostnames used by each test. Targets are stored locally on
-          this device. Tests with no valid target report &quot;Setup required&quot; instead of a
-          fake result.
+          All tests ship with safe, working defaults — configuration is optional. Edit a target to
+          point a test at your own authorized lab destination. Targets are stored locally on this
+          device. Clearing an optional field makes that test report &quot;Setup required&quot;.
         </Text>
+
+        <View style={styles.noteBanner}>
+          <MaterialDesignIcons name="shield-search" size={18} color={colors.info} />
+          <Text style={styles.noteText}>
+            The default DNS/HTTPS targets generate benign connectivity traffic and will not by
+            themselves trigger Apollo. To exercise Apollo&apos;s Growling / Barking / Biting, set
+            approved controlled threat‑test destinations here once they are established.
+          </Text>
+        </View>
 
         {FIELDS.map((f) => {
           const value = values[f.key];
@@ -223,6 +232,22 @@ const useStyles = makeStyles((colors) => ({
     color: colors.muted,
     fontSize: 14,
     lineHeight: 20,
+  },
+  noteBanner: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
+    backgroundColor: colors.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+  },
+  noteText: {
+    flex: 1,
+    color: colors.muted,
+    fontSize: 12.5,
+    lineHeight: 18,
   },
   field: {
     gap: 8,

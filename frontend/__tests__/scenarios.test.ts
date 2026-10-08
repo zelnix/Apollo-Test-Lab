@@ -4,6 +4,7 @@
 
 import {
   canStart,
+  CATEGORY_META,
   formatBytes,
   formatElapsed,
   getDestination,
@@ -68,15 +69,21 @@ describe("scenario selection", () => {
   });
 });
 
-describe("availability (Setup required)", () => {
-  it("defaults: phishing/redirect/safe ready; malicious/suspicious need setup", () => {
+describe("availability (ready out of the box)", () => {
+  it("defaults: every test is ready, none require setup", () => {
     const a = getScenarioAvailability(DEFAULT_CONFIG);
     expect(a.phishing).toBe(true);
     expect(a.redirect).toBe(true);
     expect(a["safe-traffic"]).toBe(true);
-    expect(a["malicious-domain"]).toBe(false);
-    expect(a["suspicious-connection"]).toBe(false);
+    expect(a["malicious-domain"]).toBe(true);
+    expect(a["suspicious-connection"]).toBe(true);
     expect(a.stop).toBe(true);
+  });
+
+  it("clearing an optional target makes that test Setup required", () => {
+    const cleared: LabConfig = { ...DEFAULT_CONFIG, maliciousDomain: "", suspiciousUrl: "" };
+    expect(isScenarioReady(cleared, "malicious-domain")).toBe(false);
+    expect(isScenarioReady(cleared, "suspicious-connection")).toBe(false);
   });
 
   it("becomes ready once valid targets are configured", () => {
@@ -92,6 +99,27 @@ describe("availability (Setup required)", () => {
   it("stays setup-required with an invalid target", () => {
     const config: LabConfig = { ...DEFAULT_CONFIG, suspiciousUrl: "notaurl" };
     expect(isScenarioReady(config, "suspicious-connection")).toBe(false);
+  });
+});
+
+describe("test categories", () => {
+  it("assigns an honest category to every scenario", () => {
+    const byId = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.category]));
+    expect(byId.phishing).toBe("detection");
+    expect(byId["malicious-domain"]).toBe("connectivity");
+    expect(byId["suspicious-connection"]).toBe("connectivity");
+    expect(byId.redirect).toBe("connectivity");
+    expect(byId["safe-traffic"]).toBe("control");
+    expect(byId.stop).toBe("action");
+  });
+
+  it("every category has honest metadata and none claims an Apollo verdict", () => {
+    (["detection", "connectivity", "control", "action"] as const).forEach((c) => {
+      const meta = CATEGORY_META[c];
+      expect(meta.label.length).toBeGreaterThan(0);
+      expect(meta.blurb.toLowerCase()).not.toContain("apollo blocked");
+      expect(meta.blurb.toLowerCase()).not.toContain("apollo detected");
+    });
   });
 });
 

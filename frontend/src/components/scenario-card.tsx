@@ -2,8 +2,9 @@ import MaterialDesignIcons from "@react-native-vector-icons/material-design-icon
 import { Pressable, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { CATEGORY_META } from "@/src/lib/scenarios";
+import { Scenario, StatusAccent, TestCategory } from "@/src/lib/types";
 import { makeStyles, useTheme } from "@/src/theme";
-import { Scenario, StatusAccent } from "@/src/lib/types";
 
 function accentColor(accent: StatusAccent, colors: ReturnType<typeof useTheme>["colors"]): string {
   if (accent === "error") return colors.error;
@@ -15,6 +16,16 @@ function tintColor(accent: StatusAccent, colors: ReturnType<typeof useTheme>["co
   if (accent === "error") return colors.tintRed;
   if (accent === "warning") return colors.tintAmber;
   return colors.tintGreen;
+}
+
+function toneColor(
+  tone: (typeof CATEGORY_META)[TestCategory]["tone"],
+  colors: ReturnType<typeof useTheme>["colors"],
+): string {
+  if (tone === "warning") return colors.warning;
+  if (tone === "success") return colors.success;
+  if (tone === "info") return colors.info;
+  return colors.muted;
 }
 
 type Props = {
@@ -30,6 +41,8 @@ export function ScenarioCard({ scenario, ready, disabled, onPress }: Props) {
   const accent = accentColor(scenario.accent, colors);
   const tint = tintColor(scenario.accent, colors);
   const dim = disabled;
+  const cat = CATEGORY_META[scenario.category];
+  const catColor = toneColor(cat.tone, colors);
 
   return (
     <Pressable
@@ -51,12 +64,20 @@ export function ScenarioCard({ scenario, ready, disabled, onPress }: Props) {
         <View style={styles.body}>
           <Text style={styles.title}>{scenario.label}</Text>
           <Text style={styles.desc}>{scenario.description}</Text>
-          {!ready && scenario.id !== "stop" ? (
-            <View style={styles.setupBadge} testID={`scenario-${scenario.id}-setup`}>
-              <MaterialDesignIcons name="alert-circle-outline" size={13} color={colors.warning} />
-              <Text style={styles.setupText}>Setup required</Text>
-            </View>
-          ) : null}
+          <View style={styles.tagsRow}>
+            {scenario.category !== "action" ? (
+              <View style={[styles.catTag, { borderColor: catColor }]} testID={`scenario-${scenario.id}-category`}>
+                <View style={[styles.catDot, { backgroundColor: catColor }]} />
+                <Text style={[styles.catText, { color: catColor }]}>{cat.label}</Text>
+              </View>
+            ) : null}
+            {!ready && scenario.id !== "stop" ? (
+              <View style={styles.setupBadge} testID={`scenario-${scenario.id}-setup`}>
+                <MaterialDesignIcons name="alert-circle-outline" size={13} color={colors.warning} />
+                <Text style={styles.setupText}>Setup required</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
         <MaterialDesignIcons name="chevron-right" size={24} color={colors.muted} />
       </LinearGradient>
@@ -111,11 +132,35 @@ const useStyles = makeStyles((colors) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    marginTop: 4,
   },
   setupText: {
     color: colors.warning,
     fontSize: 12,
+    fontWeight: "700",
+  },
+  tagsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 6,
+  },
+  catTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  catDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  catText: {
+    fontSize: 11.5,
     fontWeight: "700",
   },
 }));

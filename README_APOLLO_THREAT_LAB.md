@@ -18,14 +18,24 @@ locally on the device.
 
 ## The six tests
 
-| # | Test | What it really does | Runs immediately? |
-|---|------|---------------------|-------------------|
-| 1 | **Phishing Link** | Opens a configurable, harmless demo phishing URL in the Android system browser. Records only that the link was *launched*. | ✅ Yes (default: Google Safe Browsing test page) |
-| 2 | **Malicious Domain** | Genuine Android system **DNS lookup** of a configured hostname via a native Kotlin module (`InetAddress.getAllByName`). Uses the device's normal network path. | ⚙️ **Setup required** — needs an authorized lab hostname **and** the built APK (native module is not in Expo Go) |
-| 3 | **Suspicious Connection** | Bounded HTTPS GET to a configured approved endpoint on the normal network path. | ⚙️ **Setup required** — needs an approved HTTPS endpoint |
-| 4 | **Redirect** | HTTPS GET that follows redirects and records the final URL. | ✅ Yes (default: `https://httpbin.org/redirect/1`) |
-| 5 | **Safe Traffic** | Normal HTTPS GET to `https://example.com` (negative control). | ✅ Yes |
-| 6 | **Stop Test** | Cancels the in‑app request in flight and prevents new ones. Clearly notes that an already‑launched browser action cannot be cancelled. | ✅ Yes |
+| # | Test | What it really does | Category | Runs immediately? |
+|---|------|---------------------|----------|-------------------|
+| 1 | **Phishing Link** | Opens a configurable, harmless demo phishing URL in the Android system browser. Records only that the link was *launched*. | Detection test (known test threat) | ✅ Yes (default: Google Safe Browsing test page) |
+| 2 | **Malicious Domain** | Genuine Android system **DNS lookup** of a configured hostname via a native Kotlin module (`InetAddress.getAllByName`). Uses the device's normal network path. | Connectivity test (benign by default) | ✅ Yes (default: `example.com`; needs the built APK for the native module) |
+| 3 | **Suspicious Connection** | Bounded HTTPS GET to a configured endpoint on the normal network path. | Connectivity test (benign by default) | ✅ Yes (default: `https://httpbin.org/get`) |
+| 4 | **Redirect** | HTTPS GET that follows redirects and records the final URL. | Connectivity test | ✅ Yes (default: `https://httpbin.org/redirect/1`) |
+| 5 | **Safe Traffic** | Normal HTTPS GET to `https://example.com` (negative control). | Negative control | ✅ Yes |
+| 6 | **Stop Test** | Cancels the in‑app request in flight and prevents new ones. Clearly notes that an already‑launched browser action cannot be cancelled. | Control | ✅ Yes |
+
+> **Ready out of the box:** all six tests ship with safe, working defaults — no
+> manual configuration is required. Settings remains available to point any test
+> at your own authorized destination.
+>
+> **Traffic ≠ threat:** the DNS/HTTPS defaults generate *benign connectivity*
+> traffic and will not by themselves trigger Apollo's enforcement. Only the
+> Phishing default is a known test threat. To reliably exercise Apollo's
+> Growling/Barking/Biting you will set approved controlled threat‑test
+> destinations in Settings once established (still local‑only, no backend).
 
 **Truthful statuses only:** `Ready`, `Running`, `Completed`, `Failed`,
 `Cancelled`, `Setup required`.
@@ -97,9 +107,12 @@ Emergent:
    enforcement evidence supports it.
 
 ## Which scenarios run immediately vs. need setup
-- **Immediate:** Phishing Link, Redirect, Safe Traffic, Stop.
-- **Needs configured target:** Malicious Domain (hostname + APK build for native
-  DNS), Suspicious Connection (approved HTTPS endpoint).
+- **All six run immediately** with the shipped safe defaults.
+- Settings is **optional** — use it only to point Malicious Domain / Suspicious
+  Connection (or any test) at your own authorized destination, or at approved
+  controlled threat‑test destinations when established.
+- Native DNS still requires the built APK (the Kotlin module is not in Expo Go /
+  web preview).
 
 > ⚠️ **Not testable in Expo Go / web preview:** the native DNS lookup, external
 > browser launch and Android Share require a built APK on a device. Web preview

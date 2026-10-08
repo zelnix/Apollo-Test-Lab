@@ -1,0 +1,30 @@
+{
+  "summary": "RE-TEST (iteration 3) of APOLLO THREAT LAB mobile Expo app at https://apollo-test-bench.preview.emergentagent.com on 390x844. All 5 acceptance areas from the review request PASS end-to-end. (1) OUT-OF-THE-BOX READY: fresh load shows NO scenario-*-setup badges on any of phishing / malicious-domain / suspicious-connection / redirect / safe-traffic. (2) CATEGORY DISTINCTION: category-legend banner visible with correct copy ('All tests are preconfigured and ready. Generating traffic is not the same as a detectable threat: connectivity tests send benign traffic and won't by themselves trigger Apollo, while a detection test uses a known test threat. Verdicts are confirmed only inside Apollo.'). Per-card tags render exactly as required: scenario-phishing-category='Detection test', scenario-malicious-domain/suspicious-connection/redirect-category='Connectivity test', scenario-safe-traffic-category='Negative control', and scenario-stop-category is correctly absent. (3) HONESTY: no 'apollo detected / blocked / passed' claims anywhere; Malicious Domain on web honestly Failed with 'Native DNS module is not available in this runtime (Expo Go and the web preview do not include it). Install the built Android APK...'; Safe Traffic on web honestly Failed via CORS with 'A failed request (offline, DNS NXDOMAIN, TLS error, or enforcement) is a network result only and is NOT by itself evidence that Apollo enforced anything.'; Stop idle produced the honest 'No in-app test is currently running... a link already handed to the Android browser cannot be cancelled...' message. (4) SETTINGS OPTIONAL: intro contains 'optional'; all 5 settings-input-* prefilled with the exact defaults (phishingUrl=https://testsafebrowsing.appspot.com/s/phishing.html, maliciousDomain=example.com, suspiciousUrl=https://httpbin.org/get, redirectUrl=https://httpbin.org/redirect/1, safeTrafficUrl=https://example.com); clearing maliciousDomain + suspiciousUrl and saving brought back BOTH 'Setup required' badges on Home; Restore defaults + Save removed both badges again; settings-back-button navigates back. (5) REGRESSION: one-at-a-time enforced (verified by Phase 5 timing - Safe Traffic blocked other presses while Running); History records entries with status pill, time, duration, destination, honest outcome and ATL run ID; history-share-button present and pressable (web shows graceful 'Share is not supported in this browser' toast - non-crash); clear-confirm-modal + clear-cancel-button + clear-confirm-button all functional; after clear-confirm the history-empty state ('No test attempts yet') is shown. No deprecated Expo packages (expo-av/expo-barcode-scanner/expo-background-fetch) detected. No React Native issues. Honesty contract fully upheld.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_1.json",
+    "/app/test_reports/iteration_2.json",
+    "/app/test_reports/iteration_3.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DEFAULT_CONFIG (/app/frontend/src/lib/defaults.ts) now preconfigures maliciousDomain='example.com' and suspiciousUrl='https://httpbin.org/get' so getScenarioAvailability returns true for all six scenarios on fresh install - confirmed in UI.",
+    "CATEGORY_META in /app/frontend/src/lib/scenarios.ts and tag rendering in /app/frontend/src/components/scenario-card.tsx correctly skip the tag for category='action' (Stop), matching the acceptance requirement.",
+    "Settings intro + noteBanner in /app/frontend/app/settings.tsx honestly explain configuration is optional and that defaults are benign connectivity (no Apollo verdict claim).",
+    "All reference files <320 lines, pure RN components, Text wrapping, StyleSheet.create, testID coverage, EXPO_PUBLIC_BACKEND_URL from env; no hardcoded URLs.",
+    "No deprecated Expo packages present in dependency graph of reference files."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only per request)", "frontend": "100%"},
+  "seed_data_creation": "Transient: during Settings sub-test, maliciousDomain and suspiciousUrl were blanked and saved, then Restore defaults re-applied. Final state: defaults restored. History cleared via clear-confirm-button at end of run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Public preview: https://apollo-test-bench.preview.emergentagent.com, viewport 390x844. Expected web-preview behaviours (NOT bugs): Safe Traffic -> Failed via CORS to example.com; Malicious Domain -> Failed via 'Native DNS module is not available'; httpbin.org (get/redirect) may legitimately Complete due to CORS: *. Honest disclaimer legitimately contains the substrings 'Apollo allowed'/'Apollo blocked' in the phrase 'not evidence that Apollo allowed or blocked anything' - do NOT flag. Share action on web surfaces an overlay toast that can block subsequent clicks; dismiss or avoid double-clicking Clear in the same script. All 5 acceptance areas pass end-to-end.",
+  "rca_of_issue": "No bugs. Iteration 3 confirms the preconfigured defaults + category tag + legend + optional-settings behaviour works as specified and preserves the honesty contract across all six scenarios on the web preview."
+}

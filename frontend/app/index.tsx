@@ -89,6 +89,18 @@ export default function HomeScreen() {
         <Text style={styles.subtitle}>Controlled Security Testing</Text>
         <Text style={styles.description}>Run safe test activity to observe how Apollo responds.</Text>
 
+        {/* Honest distinction between benign connectivity tests and detection tests */}
+        <View style={styles.infoBanner} testID="category-legend">
+          <MaterialDesignIcons name="information-outline" size={18} color={colors.info} />
+          <Text style={styles.infoText}>
+            All tests are preconfigured and ready. Generating traffic is not the same as a
+            detectable threat: <Text style={styles.infoStrong}>connectivity</Text> tests send benign
+            traffic and won&apos;t by themselves trigger Apollo, while a{" "}
+            <Text style={styles.infoStrong}>detection</Text> test uses a known test threat. Verdicts
+            are confirmed only inside Apollo.
+          </Text>
+        </View>
+
         {/* Scenario buttons */}
         <View style={styles.cards}>
           {SCENARIOS.map((scenario) => (
@@ -223,6 +235,27 @@ const useStyles = makeStyles((colors) => ({
     fontSize: 15,
     marginTop: 2,
     marginBottom: 8,
+  },
+  infoBanner: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
+    backgroundColor: colors.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  infoText: {
+    flex: 1,
+    color: colors.muted,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  infoStrong: {
+    color: colors.onSurface,
+    fontWeight: "700",
   },
   cards: {
     gap: 12,

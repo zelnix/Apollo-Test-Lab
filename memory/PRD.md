@@ -1,0 +1,77 @@
+# PRD — Apollo Threat Lab (Android V1)
+
+## Original problem statement
+Build a standalone, installable Android app "Apollo Threat Lab" for Harmony
+Wellness Group — an internal security testing utility used alongside the
+existing Apollo Cyber Security Guard Dog app. It generates safe, controlled,
+manually‑initiated network/browser activity so Apollo can independently
+investigate it. React Native + Expo + TypeScript. Native Kotlin DNS module.
+Local only: no auth, no cloud DB, no backend. One dark‑navy screen with 6 tests,
+a live Test Activity panel, a Settings screen (editable, locally stored HTTPS
+URLs/hostnames), and local Test History (last 100, Clear + Share). Must be
+strictly honest: never fabricate success or an Apollo verdict.
+
+## Architecture
+- **Frontend only**, Expo Router (`app/index.tsx`, `app/settings.tsx`,
+  `app/history.tsx`, `app/_layout.tsx`). No FastAPI/Mongo backend used.
+- **Theme:** dark navy tokens in `src/theme.ts` (forced single scheme).
+- **Core logic (pure, unit‑tested):** `src/lib/scenarios.ts` (metadata,
+  validation, availability, state transitions, formatting), `src/lib/report.ts`
+  (honest outcome/report builders), `src/lib/defaults.ts`.
+- **Runtime:** `src/lib/useTestRunner.ts` (single‑test state machine, 15s
+  timeout, AbortController cancel), `src/lib/network.ts` (real fetch + DNS),
+  `src/lib/config.ts` + `src/lib/history.ts` (local storage via
+  `@/src/utils/storage`).
+- **Native module:** `modules/apollo-dns/` — local Kotlin Expo module performing
+  genuine Android system DNS (`InetAddress.getAllByName`); absent in Expo Go/web
+  (reported honestly).
+- **Components:** `scenario-card`, `status-pill`, `test-activity-panel`.
+- **Icons:** `@react-native-vector-icons/material-design-icons` (dynamic font
+  loading via expo-font).
+
+## User personas
+- **Security tester / internal QA** at Harmony Wellness Group validating Apollo's
+  protection on a physical Android device.
+
+## Core requirements (static)
+- 6 tests: Phishing Link, Malicious Domain (native DNS), Suspicious Connection,
+  Redirect, Safe Traffic, Stop.
+- Truthful statuses only: Ready, Running, Completed, Failed, Cancelled, Setup
+  required.
+- One test at a time; manual press; 15s timeout; no auto‑retry.
+- Unconfigured targets → Setup required (never fake success).
+- Never fabricate/inject/impersonate an Apollo event; no Apollo endpoints,
+  config changes or elevated permissions.
+- Permissions: INTERNET + ACCESS_NETWORK_STATE only.
+- Local history (last 100) with Clear + redacted Share; no cloud/analytics.
+
+## Implemented (2026-06)
+- [x] Full dark‑navy UI matching the supplied concept (home, settings, history).
+- [x] All 6 scenarios with real device networking (fetch) + external browser
+      (Linking) + native DNS module bridge with honest fallback.
+- [x] Single‑test state machine with timeout + user cancellation (Stop).
+- [x] Settings with live validation + local persistence; Setup‑required gating.
+- [x] Local history (cap 100), Clear (with confirm modal), Share as text report.
+- [x] Honesty contract enforced in all outcome/report text.
+- [x] 27 Jest unit tests passing (scenario selection, validation, availability,
+      state transitions, timeout/cancel/failure classification, report export).
+- [x] Frontend testing agent: 9/9 acceptance criteria passed.
+- [x] Deliverable docs: `/app/README_APOLLO_THREAT_LAB.md` (APK build/install +
+      which scenarios run immediately vs need setup).
+
+## Known runtime boundaries
+- Native DNS, external browser launch, Android Share require the built APK on a
+  device (not Expo Go / web). Web preview also blocks cross‑origin HTTPS (CORS),
+  so network tests honestly report `Failed` there — expected, not a defect.
+- Physical‑device acceptance has NOT been claimed as passed; it must be performed
+  by the tester with the installed APK alongside Apollo.
+
+## Backlog
+- **P1:** Per‑scenario configurable timeout; copy‑to‑clipboard for a single
+  history entry.
+- **P2:** Export history as a file (not just share text); light theme variant.
+- **P2:** iOS / Windows / macOS executors (kept modular for later versions).
+
+## Next tasks
+- Build the Android APK via Emergent Publish and perform real‑device acceptance
+  alongside Apollo; confirm native DNS + browser + share on device.

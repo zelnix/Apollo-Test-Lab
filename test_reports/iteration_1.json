@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend-only testing of APOLLO THREAT LAB mobile Expo app completed on the public preview URL at 390x844 mobile viewport. All 10 required Home testIDs render (scenario-phishing, scenario-malicious-domain, scenario-suspicious-connection, scenario-redirect, scenario-safe-traffic, scenario-stop, test-activity-panel, open-settings-button, open-history-button, clear-history-button). By default both scenario-malicious-domain-setup and scenario-suspicious-connection-setup badges are visible. Pressing Malicious Domain while unconfigured correctly sets status to 'Setup required' with the honest outcome 'Setup required - add a valid target...' and never fabricates a success. Running Safe Traffic and Suspicious Connection on web correctly produces status 'Failed' (CORS blocks cross-origin fetch - EXPECTED on web preview) with an honest outcome that explicitly states it is NOT evidence that Apollo allowed/blocked anything. No fabricated Apollo verdicts were found anywhere in the UI. Stop Test when idle shows the honest idle message about not being able to cancel browser actions. Clear history modal (clear-confirm-modal with clear-cancel-button and clear-confirm-button) opens, cancels and confirms correctly. History screen renders entries with status pill, time, duration, destination, honest outcome, run ID and shows history-empty after clear. Settings screen loads with all 5 settings-input-* fields, live validation (check icon on valid, Setup required badge on blank-optional), settings-save-button persists config so that after saving valid maliciousDomain + suspiciousUrl the Setup required badges on the Home cards disappear. settings-reset-button and settings-back-button both present and functional. HONESTY CONTRACT UPHELD: no 'Completed', no 'Apollo blocked/detected/allowed' verdict is ever produced on failed/CORS runs. 100% of critical review items passed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_1.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Code is well-structured, DRY, uses StyleSheet, Text wrapping, testID attributes everywhere, no mongodb/_id concerns (no backend). All 5 reference files under 320 lines. No deprecated Expo packages detected (expo-av, expo-barcode-scanner, expo-background-fetch all absent).",
+    "Honesty contract enforced in /app/frontend/src/lib/report.ts via APOLLO_DISCLAIMER appended to every network outcome; no code path returns a 'Completed' verdict without a real network success.",
+    "One-at-a-time enforcement verified at /app/frontend/src/lib/useTestRunner.ts:93 (early return when statusRef.current === 'Running') and at /app/frontend/app/index.tsx:99 (disabled prop on ScenarioCard when runner.isRunning). On web the fetch fails too fast (<250ms) to visually catch the Running state, but the state machine is correct."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested per request)", "frontend": "100%"},
+  "seed_data_creation": "None required - local-only app; test data entered into Settings via UI (test.example.com, https://example.com/path) and cleared via Clear flow during test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Public preview URL: https://apollo-test-bench.preview.emergentagent.com. Mobile viewport 390x844. All testIDs are stable. On web preview, any https/dns scenario WILL go to Failed because of CORS/missing native DNS module - this is correct and must not be reported as a bug. The acceptance point is that the outcome text contains the honest disclaimer and NEVER claims 'Completed' or any Apollo verdict. The disclaimer phrase 'it is not evidence that Apollo allowed or blocked anything' legitimately contains the words 'Apollo allowed' and 'Apollo blocked' - do NOT flag this as a fabricated verdict (it is the opposite - a disclaimer).",
+  "rca_of_issue": "No bugs found. All 9 feature acceptance criteria in the review request pass end-to-end against the public preview."
+}

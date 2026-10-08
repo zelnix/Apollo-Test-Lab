@@ -79,7 +79,11 @@ export function ScenarioCard({ scenario, ready, disabled, onPress }: Props) {
             ) : null}
           </View>
         </View>
-        <MaterialDesignIcons name="chevron-right" size={24} color={colors.muted} />
+        <View style={[styles.testBtn, { borderColor: accent, backgroundColor: tint }]} testID={`scenario-${scenario.id}-run`}>
+          <Text style={[styles.testBtnText, { color: accent }]}>
+            {scenario.id === "stop" ? "Stop" : "Test"}
+          </Text>
+        </View>
       </LinearGradient>
     </Pressable>
   );
@@ -162,5 +166,19 @@ const useStyles = makeStyles((colors) => ({
   catText: {
     fontSize: 11.5,
     fontWeight: "700",
+  },
+  testBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 68,
+  },
+  testBtnText: {
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: 0.3,
   },
 }));

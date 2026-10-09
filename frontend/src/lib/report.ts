@@ -10,12 +10,30 @@ const APOLLO_DISCLAIMER =
   "This is a network result only — it is not evidence that Apollo allowed or blocked anything. Verify Apollo separately in the Apollo app.";
 
 export function buildBrowserOutcome(url: string): string {
-  return `Requested the system browser to open ${url}. Threat Lab only launched the link; it cannot confirm the page loaded or that Apollo inspected it. ${APOLLO_DISCLAIMER}`;
+  return (
+    `Requested the system browser to open ${url}. Threat Lab only launched the link; ` +
+    `it cannot confirm which browser opened it, whether the page loaded, or that Apollo inspected it. ` +
+    `IMPORTANT: A browser-level Safe Browsing warning (e.g. Chrome's "Dangerous Site" alert) is ` +
+    `issued by the browser independently of Apollo's VPN or DNS protection. ` +
+    `It does NOT confirm that Apollo's Site Gate matched this URL. ` +
+    `Apollo's Site Gate requires the destination to match Apollo's own hostname or URL blocklist. ` +
+    `If Apollo shows no incident after this test, the browser's own protection acted before or ` +
+    `instead of Apollo — not an Apollo enforcement event. ` +
+    `Verify Apollo's own event log separately. ` +
+    APOLLO_DISCLAIMER
+  );
 }
 
 export function buildDnsOutcome(hostname: string, addresses: string[], durationMs: number): string {
   const ips = addresses.length ? addresses.join(", ") : "(no addresses)";
-  return `DNS resolved ${hostname} to ${ips} in ${Math.round(durationMs)}ms via the native system resolver. ${APOLLO_DISCLAIMER}`;
+  return (
+    `DNS resolved ${hostname} to ${ips} in ${Math.round(durationMs)}ms via the native system resolver. ` +
+    `A completed DNS lookup means the query traversed the device's resolver path (which Apollo's VPN ` +
+    `intercepts if connected). IMPORTANT: A hostname match in Apollo's DNS gate does NOT constitute ` +
+    `a verified connection block. Apollo must also enforce a packet-level block on the subsequent ` +
+    `HTTPS connection — DNS rule matching alone does not establish that. ` +
+    APOLLO_DISCLAIMER
+  );
 }
 
 export function buildHttpOutcome(httpStatus: number, finalUrl: string, bytes: number, durationMs: number): string {

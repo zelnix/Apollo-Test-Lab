@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 5 (deployment-fix verification: un-prefixed /health platform probe). BACKEND: 10/10 pytest cases PASS. New: GET /health (NO /api prefix) served at the backend root (http://localhost:8001/health) returns 200 with the exact payload {\"status\":\"ok\",\"service\":\"apollo-threat-lab\"} and content-type application/json; this is the dependency-free handler added in server.py:76-78 that fixes the previously 404ing platform probe. Regression: GET /api/health returns 200 with status=ok, service=apollo-threat-lab, database=connected, ISO-8601 time (datetime.fromisoformat parses it) and CORS allow-origin header present on an Origin: example.com request; GET /api/ returns 200 with app='Apollo Threat Lab' and a non-empty message; unknown /api/* paths still return 404. INGRESS CAVEAT (not a bug, documented for platform ops): on the public preview URL (https://apollo-test-bench.preview.emergentagent.com) the ingress only routes /api/* to backend port 8001, so GET /health on the public hostname falls through to the Expo web frontend (returns 200 HTML, not the backend JSON). The backend itself answers correctly on its own hostname/port — verified against http://localhost:8001/health. Platform probes should therefore target the backend service directly (or the ingress must be configured to route /health -> 8001) for the deployment-fix to be fully effective end-to-end.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /health (public ingress)", "issue": "On https://apollo-test-bench.preview.emergentagent.com/health the request is routed to the Expo frontend (HTML 200), not to backend:8001. The backend handler itself is correct and returns the expected JSON on localhost:8001/health. If the platform probe uses the public URL, add an ingress rule to route /health to port 8001; if it probes the backend service directly, no change needed."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_apollo_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/iteration_4.json",
+    "/app/test_reports/iteration_5.json"
+  ],
+  "action_items": [
+    "Confirm whether the platform health probe targets the public hostname or the backend service directly. If public: add an ingress rule mapping /health -> backend:8001 (mirroring /api/*). If service-direct: no further action — the un-prefixed GET /health is already serving 200 JSON correctly."
+  ],
+  "critical_code_review_comments": [
+    "server.py:76-78 — platform_health() is dependency-free (no DB ping, no Pydantic model), returns a static dict. Correct choice for a probe that must stay fast and never fail due to DB flakiness.",
+    "server.py:71 vs server.py:76 — @app.get('/health') is registered after app.include_router(api_router), which is fine because /health is not under /api; routes are distinct and there is no shadowing.",
+    "server.py:81-87 — CORSMiddleware is added AFTER routes are registered. Starlette applies middleware regardless of registration order, so this works, but conventionally middleware is added before routes; non-blocking nit.",
+    "No MongoDB _id leakage (no CRUD endpoints). MONGO_URL and DB_NAME are required via os.environ[...] which fails fast if missing — good."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_apollo_backend.py"
+  ],
+  "success_rate": {"backend": "100% (10/10 pytest)", "frontend": "not tested this iteration (backend-only request)"},
+  "seed_data_creation": "None. Service is health/status only; no DB writes.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend tests at /app/backend/tests/test_apollo_backend.py now cover BOTH the un-prefixed /health (tested against http://localhost:8001 because the public ingress routes only /api/*) and the /api/health, /api/, and unknown-route cases (tested against the public preview URL). To add additional backend endpoints, follow the same split: public URL for /api/* and LOCAL_URL (localhost:8001) for anything served at the backend root. Known ingress limitation: public /health returns the Expo HTML page — this is a routing config issue, not a backend bug.",
+  "rca_of_issue": "Previous 404 on /health was because only /api/health existed; a probe hitting /health at the backend root got FastAPI's default 404. Fix in server.py adds @app.get('/health') returning a static {status:'ok', service:'apollo-threat-lab'} 200 JSON. Verified via curl + pytest against localhost:8001. Note that the public ingress does not forward /health to the backend container, so if the platform probe uses the public hostname a separate ingress rule is still required."
+}

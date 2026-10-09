@@ -70,6 +70,14 @@ async def health() -> HealthResponse:
 
 app.include_router(api_router)
 
+
+# Platform health probe hits the un-prefixed /health path; keep a fast,
+# dependency-free 200 here in addition to the /api/health endpoint above.
+@app.get("/health")
+async def platform_health():
+    return {"status": "ok", "service": "apollo-threat-lab"}
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

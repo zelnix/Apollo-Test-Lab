@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 4 (deployment-readiness: real FastAPI + managed MongoDB backend, non-blocking frontend health ping). BACKEND: 6/6 pytest cases PASS on the public preview URL. GET /api/ returns 200 with {app:'Apollo Threat Lab', message: ...}. GET /api/health returns 200 with {status:'ok', service:'apollo-threat-lab', database:'connected', time: ISO-8601 parseable}. CORS allow-origin header is served (wildcard '*') for /api/health with an Origin: example.com request. Unknown /api/* paths return 404. FRONTEND REGRESSION (390x844): Home renders with the APOLLO THREAT LAB header, Controlled Security Testing subtitle, category-legend banner, and all six scenario cards. Five Test buttons + one Stop button detected; scenario-stop-category is correctly absent while the other five scenario-<id>-category tags render exactly as expected (phishing=Detection test, malicious-domain/suspicious-connection/redirect=Connectivity test, safe-traffic=Negative control). Zero 'Setup required' badges on fresh load. Backend health ping is fire-and-forget: TWO 200 responses to /api/health observed via network listener, no pageerror events, UI never blocked or crashed. Safe Traffic run on web honestly reports Failed via CORS (console shows the expected 'Access to fetch at example.com ... blocked by CORS policy' error) and no fabricated 'Apollo detected/blocked/passed' claims appear anywhere in the DOM. SETTINGS: open-settings-button navigates to /settings; all five settings-input-* fields are prefilled with the exact documented defaults (phishingUrl=https://testsafebrowsing.appspot.com/s/phishing.html, maliciousDomain=example.com, suspiciousUrl=https://httpbin.org/get, redirectUrl=https://httpbin.org/redirect/1, safeTrafficUrl=https://example.com). Clearing maliciousDomain and saving brings back a Setup required badge; settings-reset-button + settings-save-button restore defaults and badge disappears; settings-back-button returns to Home. HISTORY: open-history-button navigates to /history; history-share-button present and pressable. Clear flow: clear-history-button opens clear-confirm-modal; clear-cancel-button dismisses it. No deprecated Expo packages (expo-av/expo-barcode-scanner/expo-background-fetch) present. No React Native issues (all text in <Text>, StyleSheet.create used, EXPO_PUBLIC_BACKEND_URL via process.env, testIDs on all interactive elements). Honesty contract fully upheld.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_apollo_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/iteration_1.json",
+    "/app/test_reports/iteration_2.json",
+    "/app/test_reports/iteration_3.json",
+    "/app/test_reports/iteration_4.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "backend/server.py (80 lines): clean FastAPI app; MONGO_URL + DB_NAME required from env (os.environ[...] fails fast if missing), motor AsyncIOMotorClient closed on lifespan shutdown, /api prefix via APIRouter, HealthResponse Pydantic model, CORS wildcard appropriate for a health-only service, DB ping wrapped in try/except so an unavailable DB degrades to database='unavailable' instead of 500.",
+    "frontend/src/lib/backend.ts (17 lines): pingBackend reads EXPO_PUBLIC_BACKEND_URL, returns false if unset, swallows fetch errors - correct fire-and-forget contract; no hardcoded URL.",
+    "frontend/app/_layout.tsx: useEffect(() => { pingBackend(); }, []) is non-awaited and non-blocking; verified in-browser via 200 health responses observed on load with zero pageerrors.",
+    "No MongoDB _id leakage (no CRUD endpoints exist). No deprecated expo-av/expo-barcode-scanner/expo-background-fetch imports in reference files.",
+    "All interactive elements on Home (open-settings-button, open-history-button, clear-history-button, clear-confirm-modal, clear-cancel-button, clear-confirm-button) and Settings (settings-input-*, settings-save-button, settings-reset-button, settings-back-button) carry stable testIDs."
+  ],
+  "updated_files": [
+    "/app/backend/tests/__init__.py",
+    "/app/backend/tests/test_apollo_backend.py"
+  ],
+  "success_rate": {"backend": "100% (6/6 pytest)", "frontend": "100% (home + settings + history + clear modal + health ping + honesty)"},
+  "seed_data_creation": "Transient-only: during Settings sub-test maliciousDomain was blanked and saved (verified Setup badge reappeared), then Restore defaults + Save re-applied the shipped defaults. No history entries persisted at end of this run beyond what the Safe Traffic test logged; no backend-side writes (service is health/status only).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Public preview: https://apollo-test-bench.preview.emergentagent.com (viewport 390x844). Backend tests live at /app/backend/tests/test_apollo_backend.py (6 cases, pytest + requests). Expected web-preview behaviours (NOT bugs): Safe Traffic -> honest Failed via CORS to example.com; Malicious Domain -> honest Failed with 'Native DNS module is not available'; httpbin.org endpoints may legitimately Complete due to CORS: *. Honest disclaimer legitimately contains the phrase 'Apollo allowed or blocked' inside 'not evidence that Apollo allowed or blocked anything' - do NOT flag as a fabricated Apollo verdict. On web, Share surfaces a toast ('Share is not supported in this browser'); clicking Share and then immediately Clear can cause overlay interception - dismiss the toast or scroll first. The scenario-safe-traffic card may be below the fold on 390x844; use scroll_into_view_if_needed before clicking its Test button or any element below it.",
+  "rca_of_issue": "No bugs. Deployment-readiness changes verified: real FastAPI + managed MongoDB backend answers /api/ and /api/health correctly, the frontend health ping is non-blocking and leaves zero pageerror/console-error from the ping itself, and all previously verified on-device test, settings, history and clear flows continue to work with the honesty contract intact."
+}

@@ -27,14 +27,14 @@ const FIELDS: FieldDef[] = [
     label: "Phishing Link URL",
     kind: "url",
     placeholder: "https://...",
-    helper: "Harmless demo phishing page opened in the Android browser. Must be HTTPS.",
+    helper: "Harmless demo phishing page opened in the device's default browser. Must be HTTPS.",
   },
   {
     key: "maliciousDomain",
     label: "Malicious Domain (hostname)",
     kind: "hostname",
     placeholder: "e.g. test.example.com",
-    helper: "Bare hostname for a real Android system DNS lookup (default: example.com, a benign connectivity check). Use an authorized threat‑test domain to exercise Apollo detection.",
+    helper: "Bare hostname for a real native system DNS lookup (default: example.com, a benign connectivity check). Use an authorized threat‑test domain to exercise Apollo detection.",
     optional: true,
   },
   {

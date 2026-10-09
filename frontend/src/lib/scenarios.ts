@@ -22,7 +22,7 @@ export const SCENARIOS: Scenario[] = [
   {
     id: "malicious-domain",
     label: "Malicious Domain Test",
-    description: "Resolve a configured domain through a real Android DNS lookup.",
+    description: "Resolve a configured domain through a real native system DNS lookup.",
     icon: "web",
     accent: "warning",
     kind: "dns",

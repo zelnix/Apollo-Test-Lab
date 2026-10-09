@@ -10,7 +10,7 @@ const APOLLO_DISCLAIMER =
   "This is a network result only — it is not evidence that Apollo allowed or blocked anything. Verify Apollo separately in the Apollo app.";
 
 export function buildBrowserOutcome(url: string): string {
-  return `Requested the Android browser to open ${url}. Threat Lab only launched the link; it cannot confirm the page loaded or that Apollo inspected it. ${APOLLO_DISCLAIMER}`;
+  return `Requested the system browser to open ${url}. Threat Lab only launched the link; it cannot confirm the page loaded or that Apollo inspected it. ${APOLLO_DISCLAIMER}`;
 }
 
 export function buildDnsOutcome(hostname: string, addresses: string[], durationMs: number): string {
@@ -41,7 +41,7 @@ export function buildTimeoutOutcome(): string {
 export function buildFailureOutcome(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);
   if (msg === "NATIVE_DNS_UNAVAILABLE") {
-    return "Native DNS module is not available in this runtime (Expo Go and the web preview do not include it). Install the built Android APK to perform real Android system DNS lookups.";
+    return "Native DNS module is not available in this runtime (Expo Go and the web preview do not include it). Install the built Android APK or iOS IPA to perform real native system DNS lookups.";
   }
   return `Request failed: ${msg}. A failed request (offline, DNS NXDOMAIN, TLS error, or enforcement) is a network result only and is NOT by itself evidence that Apollo enforced anything. ${APOLLO_DISCLAIMER}`;
 }

@@ -1,6 +1,9 @@
 {
-  "platforms": ["android"],
+  "platforms": ["android", "ios"],
   "android": {
     "modules": ["com.harmonywellnessgroup.apollothreatlab.dns.ApolloDnsModule"]
+  },
+  "ios": {
+    "modules": ["ApolloDnsModule"]
   }
 }

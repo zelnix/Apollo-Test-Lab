@@ -66,12 +66,51 @@ strictly honest: never fabricate success or an Apollo verdict.
 - Physical‑device acceptance has NOT been claimed as passed; it must be performed
   by the tester with the installed APK alongside Apollo.
 
-## Backlog
+## Phase 2 — iOS (June 2026)
+
+### Implemented
+- [x] `modules/apollo-dns/ios/ApolloDnsModule.swift` — Swift DNS module using
+      POSIX `getaddrinfo(3)` with AF_UNSPEC (IPv4+IPv6), background queue via
+      expo-modules-core AsyncFunction, honest failure propagation.
+- [x] `expo-module.config.json` updated — `"platforms": ["android", "ios"]`;
+      `ios.modules: ["ApolloDnsModule"]` registered.
+- [x] Platform-neutral text across the codebase — "Android browser" →
+      "system browser"; "Android APK" → "APK or iOS IPA"; "Android system DNS
+      lookup" → "native system DNS lookup".
+- [x] `apollo-protection-paths.md` — per-scenario Apollo Gate analysis for
+      Android and iOS, including explicit iOS Content Blocker vs Network Extension
+      distinction.
+- [x] `windows-macos-recommendation.md` — Tauri 2.x vs React Native
+      Windows/macOS evaluation; Tauri recommended for Phase 3.
+- [x] `README_APOLLO_THREAT_LAB.md` — comprehensive Phase 2 update with iOS
+      signing prerequisites, platform-device acceptance checklists,
+      iOS protection path notes.
+
+### Physical-device acceptance status
+- Android V1: **Implementation complete; physical-device testing pending** (must
+  be conducted by Harmony Wellness Group with both Apollo and Threat Lab APK).
+- iOS Phase 2: **Code complete; EAS iOS build required; physical-device testing
+  pending** (requires Apple Developer account and iOS device with Apollo).
+
+### Known runtime boundaries (updated)
+- Native DNS (Android + iOS), external browser launch and device Share require
+  the built APK / IPA respectively. Expo Go and web preview: `NATIVE_DNS_UNAVAILABLE`
+  reported honestly.
+- iOS Safari Content Blocker does NOT intercept native `fetch()` or `getaddrinfo`
+  from Threat Lab. Full Apollo protection path coverage on iOS requires a Network
+  Extension (Packet Tunnel Provider or DNS Proxy Extension).
+- Physical-device Biting verification must be confirmed in Apollo's own UI with
+  a matching timestamp and destination; Threat Lab `Failed` alone is not evidence.
+
+## Backlog / Phase 3+
 - **P1:** Per‑scenario configurable timeout; copy‑to‑clipboard for a single
   history entry.
 - **P2:** Export history as a file (not just share text); light theme variant.
-- **P2:** iOS / Windows / macOS executors (kept modular for later versions).
+- **P3:** Windows and macOS via Tauri 2.x (recommendation complete in
+  `windows-macos-recommendation.md`).
 
 ## Next tasks
-- Build the Android APK via Emergent Publish and perform real‑device acceptance
-  alongside Apollo; confirm native DNS + browser + share on device.
+- Trigger EAS iOS build via Emergent Publish (requires Apple Developer credentials).
+- Confirm iOS native DNS module loads on a physical iOS device.
+- Conduct Android V1 physical-device acceptance alongside Apollo.
+- Conduct iOS Phase 2 physical-device acceptance alongside Apollo.

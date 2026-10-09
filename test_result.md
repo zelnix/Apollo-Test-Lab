@@ -101,3 +101,116 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Build "Apollo Threat Lab" - a standalone internal security testing utility (Expo/React Native)
+  that generates safe, controlled network activity to test an external VPN application. Has 10
+  predefined threat scenarios: Phishing Link, Malicious Domain, Suspicious Connection, Redirect,
+  Safe Traffic, Stop Test, Malware URL, EICAR Download, Unencrypted HTTP, Bad Certificate.
+  Dark navy cybersecurity theme. Local-first app. The user's most recent request is: when a test
+  button is clicked, show a bottom sheet modal with "Running test..." spinner, then update to
+  "Test Completed" with the outcome text, and show a "Close" button to dismiss.
+
+backend:
+  - task: "FastAPI health stub"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Minimal FastAPI health endpoint serving /health and /api/health. Runs correctly."
+
+frontend:
+  - task: "10 scenario cards render on home screen"
+    implemented: true
+    working: true
+    file: "frontend/app/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "All 10 scenarios defined in scenarios.ts and rendered via ScenarioCard components."
+
+  - task: "Test Result Modal / Bottom Sheet"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Previous agent rewrote index.tsx to implement a bottom-sheet modal. State management:
+          - showResultSheet: bool controls Modal visibility
+          - Opens automatically when runner.isRunning becomes true (useEffect)
+          - Shows ActivityIndicator + 'Test in progress...' while running
+          - Shows Outcome text + 'Close' button when runner.isRunning is false
+          - Close button calls handleCloseResult() which sets showResultSheet=false
+          - Android back button only closes if not running
+          - Backdrop tap closes if not running
+          Needs frontend testing to confirm it works in the browser preview.
+
+  - task: "History screen"
+    implemented: true
+    working: true
+    file: "frontend/app/history.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "History screen renders saved test entries from local storage."
+
+  - task: "Settings screen"
+    implemented: true
+    working: true
+    file: "frontend/app/settings.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Settings screen allows configuring custom endpoints."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "Test Result Modal / Bottom Sheet"
+    - "10 scenario cards render on home screen"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Testing focus: The previous agent implemented a bottom-sheet modal in index.tsx but never
+      tested it. Please verify:
+      1. The home screen loads with all 10 scenario cards visible.
+      2. Clicking any non-stop scenario card (e.g. "Safe Traffic") opens the modal overlay.
+      3. The modal shows an ActivityIndicator spinner with "Test in progress..." text while the
+         test runs.
+      4. After the test completes, the modal updates to show the "Observed Outcome" text and a
+         "Close" button.
+      5. Clicking "Close" dismisses the modal.
+      6. The modal has a dark navy theme matching the rest of the app.
+      NOTE: The "Phishing Link", "Malware URL" and some other browser-kind scenarios open an
+      external browser (Linking.openURL) and will show a modal that closes quickly. DNS tests
+      are native-only and may show a timeout/failure in the web preview — that is expected.
+      Focus on the MODAL UI behaviour, not the actual network outcome.
+      No credentials required. No backend auth.

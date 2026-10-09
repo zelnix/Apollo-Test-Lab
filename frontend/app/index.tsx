@@ -1,14 +1,26 @@
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScenarioCard } from "@/src/components/scenario-card";
-import { TestActivityPanel } from "@/src/components/test-activity-panel";
+import { StatusPill } from "@/src/components/status-pill";
 import { loadConfig } from "@/src/lib/config";
 import { clearHistory } from "@/src/lib/history";
-import { getScenarioAvailability, SCENARIOS } from "@/src/lib/scenarios";
+import {
+  formatClock,
+  formatElapsed,
+  getScenarioAvailability,
+  SCENARIOS,
+} from "@/src/lib/scenarios";
 import { useTestRunner } from "@/src/lib/useTestRunner";
 import { LabConfig, Scenario } from "@/src/lib/types";
 import { makeStyles, useTheme } from "@/src/theme";
@@ -21,6 +33,7 @@ export default function HomeScreen() {
 
   const [config, setConfig] = useState<LabConfig | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [showResultSheet, setShowResultSheet] = useState(false);
   const runner = useTestRunner(config);
 
   useFocusEffect(
@@ -29,11 +42,16 @@ export default function HomeScreen() {
       loadConfig().then((c) => {
         if (active) setConfig(c);
       });
-      return () => {
-        active = false;
-      };
+      return () => { active = false; };
     }, []),
   );
+
+  // Slide the result sheet up the moment a test starts.
+  useEffect(() => {
+    if (runner.isRunning) {
+      setShowResultSheet(true);
+    }
+  }, [runner.isRunning]);
 
   const availability = useMemo(
     () => (config ? getScenarioAvailability(config) : null),
@@ -56,6 +74,21 @@ export default function HomeScreen() {
     setConfirmClear(false);
   }, []);
 
+  const handleCloseResult = useCallback(() => {
+    setShowResultSheet(false);
+  }, []);
+
+  // Resolve accent colour for the scenario icon shown in the result sheet.
+  const activeScenario = runner.activity.scenarioId
+    ? SCENARIOS.find((s) => s.id === runner.activity.scenarioId) ?? null
+    : null;
+  const sheetAccent =
+    activeScenario?.accent === "error"
+      ? colors.error
+      : activeScenario?.accent === "warning"
+        ? colors.warning
+        : colors.success;
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -65,7 +98,7 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* ── Header ────────────────────────────────────────────────────── */}
         <View style={styles.headerRow}>
           <View style={styles.brandRow}>
             <View style={styles.logo}>
@@ -86,22 +119,26 @@ export default function HomeScreen() {
             <MaterialDesignIcons name="cog" size={26} color={colors.subtitle} />
           </Pressable>
         </View>
-        <Text style={styles.subtitle}>Controlled Security Testing</Text>
-        <Text style={styles.description}>Run safe test activity to observe how Apollo responds.</Text>
 
-        {/* Honest distinction between benign connectivity tests and detection tests */}
+        <Text style={styles.subtitle}>Controlled Security Testing</Text>
+        <Text style={styles.description}>
+          Run safe test activity to observe how Apollo responds.
+        </Text>
+
+        {/* ── Category legend ───────────────────────────────────────────── */}
         <View style={styles.infoBanner} testID="category-legend">
           <MaterialDesignIcons name="information-outline" size={18} color={colors.info} />
           <Text style={styles.infoText}>
-            All tests are preconfigured and ready. Generating traffic is not the same as a
-            detectable threat: <Text style={styles.infoStrong}>connectivity</Text> tests send benign
-            traffic and won&apos;t by themselves trigger Apollo, while a{" "}
-            <Text style={styles.infoStrong}>detection</Text> test uses a known test threat. Verdicts
-            are confirmed only inside Apollo.
+            All tests are preconfigured and ready. Generating traffic is not the same
+            as a detectable threat:{" "}
+            <Text style={styles.infoStrong}>connectivity</Text> tests send benign traffic
+            and won&apos;t by themselves trigger Apollo, while a{" "}
+            <Text style={styles.infoStrong}>detection</Text> test uses a known test
+            threat. Verdicts are confirmed only inside Apollo.
           </Text>
         </View>
 
-        {/* Scenario buttons */}
+        {/* ── Scenario cards ────────────────────────────────────────────── */}
         <View style={styles.cards}>
           {SCENARIOS.map((scenario) => (
             <ScenarioCard
@@ -114,12 +151,7 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Live test results */}
-        <View style={styles.panelWrap}>
-          <TestActivityPanel activity={runner.activity} />
-        </View>
-
-        {/* Footer actions */}
+        {/* ── Footer actions ────────────────────────────────────────────── */}
         <View style={styles.footerActions}>
           <Pressable
             testID="open-history-button"
@@ -146,32 +178,177 @@ export default function HomeScreen() {
         <Text style={styles.footerNote}>Internal Test Utility • Harmony Wellness Group</Text>
       </ScrollView>
 
-      {/* Clear confirmation */}
+      {/* ── Result Bottom Sheet ───────────────────────────────────────────── */}
+      <Modal
+        visible={showResultSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          // Android back button: only close when the test is not still running.
+          if (!runner.isRunning) handleCloseResult();
+        }}
+      >
+        <View style={styles.sheetBackdrop}>
+          {/* Tapping the dimmed area closes the sheet when done */}
+          <Pressable
+            style={styles.sheetBackdropTouch}
+            onPress={!runner.isRunning ? handleCloseResult : undefined}
+          />
+
+          <View
+            style={[
+              styles.sheet,
+              { paddingBottom: Math.max(insets.bottom, 12) + 16 },
+            ]}
+          >
+            {/* Drag handle */}
+            <View style={styles.dragHandle} />
+
+            {/* Scenario icon + label + status pill */}
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetTitleRow}>
+                {activeScenario ? (
+                  <View
+                    style={[styles.sheetIconWrap, { borderColor: sheetAccent }]}
+                  >
+                    <MaterialDesignIcons
+                      name={activeScenario.icon as never}
+                      size={18}
+                      color={sheetAccent}
+                    />
+                  </View>
+                ) : null}
+                <Text style={styles.sheetTitle} numberOfLines={2}>
+                  {runner.activity.scenarioLabel || "Test"}
+                </Text>
+              </View>
+              <StatusPill status={runner.activity.status} />
+            </View>
+
+            <View style={styles.sheetDivider} />
+
+            {/* Destination */}
+            {runner.activity.destination ? (
+              <View style={styles.sheetRow}>
+                <Text style={styles.sheetRowLabel}>Destination</Text>
+                <Text style={styles.sheetRowValue} numberOfLines={2}>
+                  {runner.activity.destination}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Start time */}
+            {runner.activity.startTime ? (
+              <View style={styles.sheetRow}>
+                <Text style={styles.sheetRowLabel}>Start Time</Text>
+                <Text style={styles.sheetRowValue}>
+                  {formatClock(runner.activity.startTime)}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Elapsed */}
+            <View style={styles.sheetRow}>
+              <Text style={styles.sheetRowLabel}>Elapsed</Text>
+              <Text style={styles.sheetRowValue}>
+                {formatElapsed(runner.activity.elapsedMs)}
+              </Text>
+            </View>
+
+            {/* Running spinner  OR  completed outcome */}
+            {runner.isRunning ? (
+              <View style={styles.runningBlock}>
+                <ActivityIndicator color={colors.brand} size="small" />
+                <Text style={styles.runningText}>Test in progress…</Text>
+              </View>
+            ) : (
+              <View style={styles.outcomeBlock}>
+                <Text style={styles.outcomeLabel}>Observed Outcome</Text>
+                <ScrollView
+                  style={styles.outcomeScroll}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text style={styles.outcomeText}>
+                    {runner.activity.outcome}
+                  </Text>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Stop (while running) or Close (when done) */}
+            <View style={styles.sheetAction}>
+              {runner.isRunning ? (
+                <Pressable
+                  onPress={runner.stop}
+                  style={({ pressed }) => [
+                    styles.actionBtn,
+                    styles.stopBtn,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <MaterialDesignIcons
+                    name="stop-circle-outline"
+                    size={18}
+                    color={colors.onError}
+                  />
+                  <Text style={styles.stopBtnText}>Stop Test</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  testID="result-close-button"
+                  onPress={handleCloseResult}
+                  style={({ pressed }) => [
+                    styles.actionBtn,
+                    styles.closeBtn,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.closeBtnText}>Close</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Clear History Confirmation ────────────────────────────────────── */}
       <Modal
         visible={confirmClear}
         transparent
         animationType="fade"
         onRequestClose={() => setConfirmClear(false)}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setConfirmClear(false)}>
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setConfirmClear(false)}
+        >
           <Pressable style={styles.modalCard} testID="clear-confirm-modal">
             <Text style={styles.modalTitle}>Clear test history?</Text>
             <Text style={styles.modalBody}>
-              This permanently removes all locally stored test attempts on this device. This cannot
-              be undone.
+              This permanently removes all locally stored test attempts on this
+              device. This cannot be undone.
             </Text>
             <View style={styles.modalActions}>
               <Pressable
                 testID="clear-cancel-button"
                 onPress={() => setConfirmClear(false)}
-                style={({ pressed }) => [styles.modalBtn, styles.modalBtnGhost, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.modalBtn,
+                  styles.modalBtnGhost,
+                  pressed && styles.pressed,
+                ]}
               >
                 <Text style={styles.modalBtnGhostText}>Cancel</Text>
               </Pressable>
               <Pressable
                 testID="clear-confirm-button"
                 onPress={handleClear}
-                style={({ pressed }) => [styles.modalBtn, styles.modalBtnDanger, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.modalBtn,
+                  styles.modalBtnDanger,
+                  pressed && styles.pressed,
+                ]}
               >
                 <Text style={styles.modalBtnDangerText}>Clear History</Text>
               </Pressable>
@@ -195,6 +372,8 @@ const useStyles = makeStyles((colors) => ({
   pressed: {
     opacity: 0.7,
   },
+
+  // ── Header / brand ──────────────────────────────────────────────────
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -236,6 +415,8 @@ const useStyles = makeStyles((colors) => ({
     marginTop: 2,
     marginBottom: 8,
   },
+
+  // ── Info banner ─────────────────────────────────────────────────────
   infoBanner: {
     flexDirection: "row",
     gap: 10,
@@ -257,12 +438,13 @@ const useStyles = makeStyles((colors) => ({
     color: colors.onSurface,
     fontWeight: "700",
   },
+
+  // ── Scenario cards ──────────────────────────────────────────────────
   cards: {
     gap: 12,
   },
-  panelWrap: {
-    marginTop: 16,
-  },
+
+  // ── Footer ──────────────────────────────────────────────────────────
   footerActions: {
     flexDirection: "row",
     gap: 12,
@@ -292,6 +474,148 @@ const useStyles = makeStyles((colors) => ({
     textAlign: "center",
     marginTop: 16,
   },
+
+  // ── Result bottom sheet ─────────────────────────────────────────────
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "flex-end",
+  },
+  sheetBackdropTouch: {
+    flex: 1,
+  },
+  sheet: {
+    backgroundColor: colors.surfaceSecondary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.divider,
+    alignSelf: "center",
+    marginBottom: 18,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 4,
+  },
+  sheetTitleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  sheetIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surface,
+    flexShrink: 0,
+  },
+  sheetTitle: {
+    flex: 1,
+    color: colors.onSurface,
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  sheetDivider: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginVertical: 14,
+  },
+  sheetRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 5,
+    gap: 12,
+  },
+  sheetRowLabel: {
+    color: colors.muted,
+    fontSize: 13,
+    width: 90,
+    lineHeight: 18,
+  },
+  sheetRowValue: {
+    color: colors.onSurface,
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
+  },
+  runningBlock: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 20,
+  },
+  runningText: {
+    color: colors.onSurface,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  outcomeBlock: {
+    marginTop: 14,
+    gap: 8,
+  },
+  outcomeLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  outcomeScroll: {
+    maxHeight: 160,
+  },
+  outcomeText: {
+    color: colors.onSurfaceSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  sheetAction: {
+    marginTop: 20,
+  },
+  actionBtn: {
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+  },
+  stopBtn: {
+    backgroundColor: colors.error,
+  },
+  stopBtnText: {
+    color: colors.onError,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  closeBtn: {
+    backgroundColor: colors.surfaceTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  closeBtnText: {
+    color: colors.onSurface,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  // ── Clear history confirmation modal ────────────────────────────────
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",

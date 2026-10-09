@@ -6,11 +6,11 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DEFAULT_CONFIG, loadConfig, saveConfig } from "@/src/lib/config";
-import { isValidHostname, isValidHttpsUrl } from "@/src/lib/scenarios";
+import { isValidAnyUrl, isValidHostname, isValidHttpsUrl } from "@/src/lib/scenarios";
 import { LabConfig } from "@/src/lib/types";
 import { makeStyles, useTheme } from "@/src/theme";
 
-type FieldKind = "url" | "hostname";
+type FieldKind = "url" | "hostname" | "anyurl";
 
 type FieldDef = {
   key: keyof LabConfig;
@@ -28,6 +28,13 @@ const FIELDS: FieldDef[] = [
     kind: "url",
     placeholder: "https://...",
     helper: "Harmless demo phishing page opened in the device's default browser. Must be HTTPS.",
+  },
+  {
+    key: "malwareUrl",
+    label: "Malware URL",
+    kind: "url",
+    placeholder: "https://...",
+    helper: "Harmless malware-category test URL opened in the device's default browser (distinct from phishing). Must be HTTPS.",
   },
   {
     key: "maliciousDomain",
@@ -53,6 +60,27 @@ const FIELDS: FieldDef[] = [
     helper: "HTTPS endpoint that issues redirects. Threat Lab records the final URL.",
   },
   {
+    key: "httpUrl",
+    label: "Unencrypted HTTP URL",
+    kind: "anyurl",
+    placeholder: "http://neverssl.com",
+    helper: "Plain HTTP (not HTTPS) URL for the cleartext-traffic gate test. Use http:// — the point of this test is the absence of TLS.",
+  },
+  {
+    key: "eicarUrl",
+    label: "EICAR Download URL",
+    kind: "url",
+    placeholder: "https://secure.eicar.org/eicar.com.txt",
+    helper: "HTTPS URL serving the EICAR test file. Harmless — the EICAR string is the industry-standard antivirus test payload.",
+  },
+  {
+    key: "badCertUrl",
+    label: "Bad Certificate URL",
+    kind: "url",
+    placeholder: "https://expired.badssl.com/",
+    helper: "HTTPS endpoint with an invalid (e.g. expired) certificate. Expected outcome is a TLS error; badssl.com maintains a suite of these for security testing.",
+  },
+  {
     key: "safeTrafficUrl",
     label: "Safe Traffic URL",
     kind: "url",
@@ -64,7 +92,9 @@ const FIELDS: FieldDef[] = [
 function isFieldValid(kind: FieldKind, value: string, optional?: boolean): boolean {
   const v = value.trim();
   if (v.length === 0) return Boolean(optional);
-  return kind === "url" ? isValidHttpsUrl(v) : isValidHostname(v);
+  if (kind === "url") return isValidHttpsUrl(v);
+  if (kind === "anyurl") return isValidAnyUrl(v);
+  return isValidHostname(v);
 }
 
 export default function SettingsScreen() {
@@ -90,9 +120,13 @@ export default function SettingsScreen() {
   const handleSave = useCallback(async () => {
     const trimmed: LabConfig = {
       phishingUrl: values.phishingUrl.trim(),
+      malwareUrl: values.malwareUrl.trim(),
       maliciousDomain: values.maliciousDomain.trim(),
       suspiciousUrl: values.suspiciousUrl.trim(),
       redirectUrl: values.redirectUrl.trim(),
+      httpUrl: values.httpUrl.trim(),
+      eicarUrl: values.eicarUrl.trim(),
+      badCertUrl: values.badCertUrl.trim(),
       safeTrafficUrl: values.safeTrafficUrl.trim(),
     };
     await saveConfig(trimmed);
@@ -165,7 +199,7 @@ export default function SettingsScreen() {
                 placeholderTextColor={colors.muted}
                 autoCapitalize="none"
                 autoCorrect={false}
-                keyboardType={f.kind === "url" ? "url" : "default"}
+                keyboardType={f.kind === "url" || f.kind === "anyurl" ? "url" : "default"}
                 style={[styles.input, !valid && !blankOptional && styles.inputInvalid]}
               />
               <Text style={styles.helper}>{f.helper}</Text>

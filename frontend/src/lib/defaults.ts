@@ -18,4 +18,17 @@ export const DEFAULT_CONFIG: LabConfig = {
   suspiciousUrl: "https://httpbin.org/get",
   redirectUrl: "https://httpbin.org/redirect/1",
   safeTrafficUrl: "https://example.com",
+  // ── NEW (Phase 2 additional scenarios) ──────────────────────────────────────
+  // Malware URL: Google Safe Browsing malware-category test page (not phishing).
+  // Distinct gate: URL/Web Gate malware category vs phishing social-engineering.
+  malwareUrl: "https://testsafebrowsing.appspot.com/s/malware.html",
+  // EICAR: Industry-standard harmless test file served over HTTPS.
+  // Exercises the content-inspection gate (signature analysis of downloaded bytes).
+  eicarUrl: "https://secure.eicar.org/eicar.com.txt",
+  // HTTP: Intentionally unencrypted. neverssl.com is maintained specifically to
+  // remain on plain HTTP (no TLS redirect) for captive-portal and protocol testing.
+  httpUrl: "http://neverssl.com",
+  // Bad certificate: badssl.com is an industry-standard TLS test infrastructure.
+  // expired.badssl.com has a genuinely expired certificate, causing a TLS error.
+  badCertUrl: "https://expired.badssl.com/",
 };

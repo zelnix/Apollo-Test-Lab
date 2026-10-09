@@ -9,7 +9,12 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.harmonywellnessgroup.apollothreatlab"
+      "bundleIdentifier": "com.harmonywellnessgroup.apollothreatlab",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,6 +22,7 @@
         "backgroundColor": "#0A1120"
       },
       "package": "com.harmonywellnessgroup.apollothreatlab",
+      "usesCleartextTraffic": true,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE"

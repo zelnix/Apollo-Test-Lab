@@ -74,17 +74,22 @@ strictly honest: never fabricate success or an Apollo verdict.
       expo-modules-core AsyncFunction, honest failure propagation.
 - [x] `expo-module.config.json` updated — `"platforms": ["android", "ios"]`;
       `ios.modules: ["ApolloDnsModule"]` registered.
-- [x] Platform-neutral text across the codebase — "Android browser" →
-      "system browser"; "Android APK" → "APK or iOS IPA"; "Android system DNS
-      lookup" → "native system DNS lookup".
-- [x] `apollo-protection-paths.md` — per-scenario Apollo Gate analysis for
-      Android and iOS, including explicit iOS Content Blocker vs Network Extension
-      distinction.
-- [x] `windows-macos-recommendation.md` — Tauri 2.x vs React Native
-      Windows/macOS evaluation; Tauri recommended for Phase 3.
-- [x] `README_APOLLO_THREAT_LAB.md` — comprehensive Phase 2 update with iOS
-      signing prerequisites, platform-device acceptance checklists,
-      iOS protection path notes.
+- [x] Platform-neutral text across the codebase.
+- [x] `apollo-protection-paths.md` — per-scenario Apollo Gate analysis.
+- [x] `windows-macos-recommendation.md` — Tauri 2.x recommendation.
+- [x] `README_APOLLO_THREAT_LAB.md` — Phase 2 update.
+- [x] **Phase 2 Additional Scenarios** — 4 new test buttons added for missing gates:
+  - `malware-url` (browser, detection): Opens `testsafebrowsing.appspot.com/s/malware.html` — exercises URL/Browser malware gate, distinct from phishing.
+  - `malware-download` / EICAR (eicar kind, detection): HTTPS GET to `secure.eicar.org/eicar.com.txt` — exercises content-inspection gate; detects whether EICAR signature was blocked.
+  - `unencrypted-http` (http kind, connectivity): Plain HTTP GET to `neverssl.com` — exercises cleartext/protocol gate. Requires `usesCleartextTraffic:true` (Android) / `NSAllowsArbitraryLoads:true` (iOS).
+  - `bad-certificate` (bad-cert kind, detection): HTTPS GET to `expired.badssl.com` — exercises TLS/certificate gate; expected failure is a TLS error reported honestly with gate-specific context.
+- [x] New `isValidAnyUrl` validator (accepts both http:// and https://) for HTTP test field.
+- [x] `buildFailureOutcome` enhanced with TLS error keyword detection for contextual bad-cert messages.
+- [x] `executeScenario` refactored: all cases now use `getDestination` generically.
+- [x] Settings: 9 configurable fields (was 5); `anyurl` FieldKind added.
+- [x] `app.json`: `usesCleartextTraffic:true` + `NSAllowsArbitraryLoads:true`.
+- [x] Unit tests updated: scenario count assertion 6→10; availability + category tests cover all 10.
+- [x] All 41 unit tests pass.
 
 ### Physical-device acceptance status
 - Android V1: **Implementation complete; physical-device testing pending** (must

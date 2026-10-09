@@ -15,7 +15,7 @@ export function buildBrowserOutcome(url: string): string {
 
 export function buildDnsOutcome(hostname: string, addresses: string[], durationMs: number): string {
   const ips = addresses.length ? addresses.join(", ") : "(no addresses)";
-  return `DNS resolved ${hostname} to ${ips} in ${Math.round(durationMs)}ms via the Android system resolver. ${APOLLO_DISCLAIMER}`;
+  return `DNS resolved ${hostname} to ${ips} in ${Math.round(durationMs)}ms via the native system resolver. ${APOLLO_DISCLAIMER}`;
 }
 
 export function buildHttpOutcome(httpStatus: number, finalUrl: string, bytes: number, durationMs: number): string {
@@ -43,11 +43,57 @@ export function buildFailureOutcome(error: unknown): string {
   if (msg === "NATIVE_DNS_UNAVAILABLE") {
     return "Native DNS module is not available in this runtime (Expo Go and the web preview do not include it). Install the built Android APK or iOS IPA to perform real native system DNS lookups.";
   }
+  // Provide specific context for TLS/certificate errors — they are the expected
+  // outcome of the Bad Certificate Test and should not be confused with a generic failure.
+  if (/certificate|ssl|tls|handshake|pkix|trust anchor|hostname|x\.509/i.test(msg)) {
+    return `TLS/certificate error: ${msg}. This is the expected outcome for a bad-certificate test if Apollo did not intercept the connection. A TLS error means the OS rejected the invalid certificate before any data was exchanged — it is not by itself evidence that Apollo enforced anything. ${APOLLO_DISCLAIMER}`;
+  }
   return `Request failed: ${msg}. A failed request (offline, DNS NXDOMAIN, TLS error, or enforcement) is a network result only and is NOT by itself evidence that Apollo enforced anything. ${APOLLO_DISCLAIMER}`;
 }
 
 export function buildStopIdleOutcome(): string {
-  return "No in-app test is currently running. Note: a link already handed to the Android browser cannot be cancelled by Threat Lab.";
+  return "No in-app test is currently running. Note: a link already handed to the system browser cannot be cancelled by Threat Lab.";
+}
+
+// ── New scenario outcome builders ────────────────────────────────────────────
+
+// EICAR download test: reports whether the EICAR test signature was received in
+// the response body. eicarDetected=true means the content was NOT blocked at the
+// network or content-inspection layer. eicarDetected=false with a 200 status
+// suggests Apollo may have substituted a block page.
+export function buildEicarOutcome(
+  httpStatus: number,
+  bytes: number,
+  durationMs: number,
+  eicarDetected: boolean,
+): string {
+  const summary = eicarDetected
+    ? "EICAR test signature received in response body — content-inspection gate did not block this download."
+    : `HTTP ${httpStatus} received but EICAR signature not found in ${bytes} bytes — possible Apollo block page or content substitution.`;
+  return `EICAR download: HTTP ${httpStatus} • ${bytes} bytes • ${Math.round(durationMs)}ms. ${summary} ${APOLLO_DISCLAIMER}`;
+}
+
+// Unencrypted HTTP test: records that the request used plain HTTP (not HTTPS).
+// A completed response confirms cleartext traffic was not blocked on the device path.
+export function buildUnencryptedHttpOutcome(
+  httpStatus: number,
+  finalUrl: string,
+  bytes: number,
+  durationMs: number,
+): string {
+  return `Unencrypted HTTP ${httpStatus} from ${finalUrl} • ${bytes} bytes • ${Math.round(durationMs)}ms. This request intentionally used plain HTTP. A completed response means cleartext traffic traversed the device's network path. ${APOLLO_DISCLAIMER}`;
+}
+
+// Bad certificate test (success path): the connection completed despite an
+// invalid certificate. This may mean Apollo substituted a block page (common
+// enforcement pattern), the certificate was quietly accepted, or the cert is
+// no longer expired.
+export function buildBadCertCompletedOutcome(
+  httpStatus: number,
+  finalUrl: string,
+  durationMs: number,
+): string {
+  return `TLS certificate test: connection completed — HTTP ${httpStatus} from ${finalUrl} in ${Math.round(durationMs)}ms. The endpoint has an invalid certificate; a successful connection may indicate Apollo redirected to a block page, or the certificate state changed. ${APOLLO_DISCLAIMER}`;
 }
 
 // --- Redaction (for shared / exported reports only) -------------------------

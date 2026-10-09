@@ -6,17 +6,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking } from "react-native";
 
 import { addHistoryEntry, genRunId } from "./history";
-import { performDnsLookup, performHttpRequest } from "./network";
+import { performDnsLookup, performEicarRequest, performHttpRequest } from "./network";
 import {
   buildBrowserOutcome,
+  buildBadCertCompletedOutcome,
   buildCancelledOutcome,
   buildDnsOutcome,
+  buildEicarOutcome,
   buildFailureOutcome,
   buildHttpOutcome,
   buildRedirectOutcome,
   buildSetupOutcome,
   buildStopIdleOutcome,
   buildTimeoutOutcome,
+  buildUnencryptedHttpOutcome,
 } from "./report";
 import {
   getDestination,
@@ -43,21 +46,40 @@ async function executeScenario(
 ): Promise<string> {
   switch (scenario.kind) {
     case "browser": {
-      await Linking.openURL(config.phishingUrl);
-      return buildBrowserOutcome(config.phishingUrl);
+      // Both phishing and malware-url share this path.
+      const url = getDestination(scenario.id, config);
+      await Linking.openURL(url);
+      return buildBrowserOutcome(url);
     }
     case "dns": {
-      const r = await performDnsLookup(config.maliciousDomain, signal);
+      const r = await performDnsLookup(getDestination(scenario.id, config), signal);
       return buildDnsOutcome(r.hostname, r.addresses, r.durationMs);
     }
     case "https": {
-      const url = scenario.id === "safe-traffic" ? config.safeTrafficUrl : config.suspiciousUrl;
-      const r = await performHttpRequest(url, signal);
+      const r = await performHttpRequest(getDestination(scenario.id, config), signal);
       return buildHttpOutcome(r.httpStatus, r.finalUrl, r.bytes, r.durationMs);
     }
     case "redirect": {
-      const r = await performHttpRequest(config.redirectUrl, signal);
+      const r = await performHttpRequest(getDestination(scenario.id, config), signal);
       return buildRedirectOutcome(r.httpStatus, r.finalUrl, r.durationMs);
+    }
+    case "http": {
+      // Intentionally unencrypted. Requires usesCleartextTraffic (Android) and
+      // NSAllowsArbitraryLoads (iOS) in app.json to permit http:// URLs.
+      const r = await performHttpRequest(getDestination(scenario.id, config), signal);
+      return buildUnencryptedHttpOutcome(r.httpStatus, r.finalUrl, r.bytes, r.durationMs);
+    }
+    case "eicar": {
+      const r = await performEicarRequest(getDestination(scenario.id, config), signal);
+      return buildEicarOutcome(r.httpStatus, r.bytes, r.durationMs, r.eicarDetected);
+    }
+    case "bad-cert": {
+      // The expected outcome is a TLS error (fetch throws) — buildFailureOutcome
+      // in the runner's catch block handles that path with TLS-specific context.
+      // This success branch is only reached if the connection completed despite
+      // the invalid certificate (e.g. Apollo block page or renewed cert).
+      const r = await performHttpRequest(getDestination(scenario.id, config), signal);
+      return buildBadCertCompletedOutcome(r.httpStatus, r.finalUrl, r.durationMs);
     }
     default:
       return "No action.";

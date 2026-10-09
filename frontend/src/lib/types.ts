@@ -2,9 +2,13 @@
 
 export type ScenarioId =
   | "phishing"
+  | "malware-url"
   | "malicious-domain"
   | "suspicious-connection"
   | "redirect"
+  | "unencrypted-http"
+  | "malware-download"
+  | "bad-certificate"
   | "safe-traffic"
   | "stop";
 
@@ -17,7 +21,7 @@ export type TestStatus =
   | "Cancelled"
   | "Setup required";
 
-export type ScenarioKind = "browser" | "dns" | "https" | "redirect" | "stop";
+export type ScenarioKind = "browser" | "dns" | "https" | "redirect" | "stop" | "http" | "eicar" | "bad-cert";
 
 export type StatusAccent = "error" | "warning" | "success";
 
@@ -35,6 +39,10 @@ export type LabConfig = {
   suspiciousUrl: string; // https endpoint, may be ""
   redirectUrl: string;
   safeTrafficUrl: string;
+  malwareUrl: string;    // browser: malware-category test URL
+  eicarUrl: string;      // https: EICAR test file endpoint
+  httpUrl: string;       // http: intentionally unencrypted endpoint
+  badCertUrl: string;    // https: endpoint with invalid/expired TLS certificate
 };
 
 export type Scenario = {

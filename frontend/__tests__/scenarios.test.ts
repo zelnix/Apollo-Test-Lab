@@ -51,12 +51,16 @@ describe("target validation", () => {
 });
 
 describe("scenario selection", () => {
-  it("exposes exactly the six documented scenarios", () => {
+  it("exposes exactly the ten documented scenarios", () => {
     expect(SCENARIOS.map((s) => s.id)).toEqual([
       "phishing",
+      "malware-url",
       "malicious-domain",
       "suspicious-connection",
       "redirect",
+      "unencrypted-http",
+      "malware-download",
+      "bad-certificate",
       "safe-traffic",
       "stop",
     ]);
@@ -65,6 +69,10 @@ describe("scenario selection", () => {
   it("looks scenarios up by id", () => {
     expect(getScenario("safe-traffic").kind).toBe("https");
     expect(getScenario("malicious-domain").kind).toBe("dns");
+    expect(getScenario("malware-url").kind).toBe("browser");
+    expect(getScenario("unencrypted-http").kind).toBe("http");
+    expect(getScenario("malware-download").kind).toBe("eicar");
+    expect(getScenario("bad-certificate").kind).toBe("bad-cert");
     expect(() => getScenario("nope" as never)).toThrow();
   });
 });
@@ -73,10 +81,14 @@ describe("availability (ready out of the box)", () => {
   it("defaults: every test is ready, none require setup", () => {
     const a = getScenarioAvailability(DEFAULT_CONFIG);
     expect(a.phishing).toBe(true);
+    expect(a["malware-url"]).toBe(true);
     expect(a.redirect).toBe(true);
     expect(a["safe-traffic"]).toBe(true);
     expect(a["malicious-domain"]).toBe(true);
     expect(a["suspicious-connection"]).toBe(true);
+    expect(a["unencrypted-http"]).toBe(true);
+    expect(a["malware-download"]).toBe(true);
+    expect(a["bad-certificate"]).toBe(true);
     expect(a.stop).toBe(true);
   });
 
@@ -106,9 +118,13 @@ describe("test categories", () => {
   it("assigns an honest category to every scenario", () => {
     const byId = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.category]));
     expect(byId.phishing).toBe("detection");
+    expect(byId["malware-url"]).toBe("detection");
     expect(byId["malicious-domain"]).toBe("connectivity");
     expect(byId["suspicious-connection"]).toBe("connectivity");
     expect(byId.redirect).toBe("connectivity");
+    expect(byId["unencrypted-http"]).toBe("connectivity");
+    expect(byId["malware-download"]).toBe("detection");
+    expect(byId["bad-certificate"]).toBe("detection");
     expect(byId["safe-traffic"]).toBe("control");
     expect(byId.stop).toBe("action");
   });

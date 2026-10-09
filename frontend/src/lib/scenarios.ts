@@ -20,6 +20,16 @@ export const SCENARIOS: Scenario[] = [
     configKey: "phishingUrl",
   },
   {
+    id: "malware-url",
+    label: "Malware URL Test",
+    description: "Open a harmless malware-category test URL in browser.",
+    icon: "bug-outline",
+    accent: "error",
+    kind: "browser",
+    category: "detection",
+    configKey: "malwareUrl",
+  },
+  {
     id: "malicious-domain",
     label: "Malicious Domain Test",
     description: "Resolve a configured domain through a real native system DNS lookup.",
@@ -48,6 +58,36 @@ export const SCENARIOS: Scenario[] = [
     kind: "redirect",
     category: "connectivity",
     configKey: "redirectUrl",
+  },
+  {
+    id: "unencrypted-http",
+    label: "Unencrypted HTTP Test",
+    description: "Send a plain HTTP request to test the cleartext-traffic gate.",
+    icon: "lock-open-variant-outline",
+    accent: "warning",
+    kind: "http",
+    category: "connectivity",
+    configKey: "httpUrl",
+  },
+  {
+    id: "malware-download",
+    label: "EICAR Download Test",
+    description: "Fetch the EICAR test file over HTTPS to exercise content inspection.",
+    icon: "file-alert-outline",
+    accent: "error",
+    kind: "eicar",
+    category: "detection",
+    configKey: "eicarUrl",
+  },
+  {
+    id: "bad-certificate",
+    label: "Bad Certificate Test",
+    description: "Connect to an endpoint with an expired TLS certificate.",
+    icon: "certificate-outline",
+    accent: "error",
+    kind: "bad-cert",
+    category: "detection",
+    configKey: "badCertUrl",
   },
   {
     id: "safe-traffic",
@@ -117,6 +157,15 @@ export function isValidHttpsUrl(value: string | null | undefined): boolean {
   return /^https:\/\/[^\s/$.?#][^\s]*$/i.test(v) || /^https:\/\/[a-z0-9.-]+(:\d+)?(\/[^\s]*)?$/i.test(v);
 }
 
+// Accepts any http:// or https:// URL. Used for the unencrypted-HTTP test
+// where the http:// scheme is intentional.
+export function isValidAnyUrl(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const v = value.trim();
+  if (/\s/.test(v)) return false;
+  return /^https?:\/\/[^\s/$.?#][^\s]*$/i.test(v);
+}
+
 export function isValidHostname(value: string | null | undefined): boolean {
   if (!value) return false;
   const v = value.trim();
@@ -133,9 +182,13 @@ export function isValidHostname(value: string | null | undefined): boolean {
 export function getScenarioAvailability(config: LabConfig): Record<ScenarioId, boolean> {
   return {
     phishing: isValidHttpsUrl(config.phishingUrl),
+    "malware-url": isValidHttpsUrl(config.malwareUrl),
     "malicious-domain": isValidHostname(config.maliciousDomain),
     "suspicious-connection": isValidHttpsUrl(config.suspiciousUrl),
     redirect: isValidHttpsUrl(config.redirectUrl),
+    "unencrypted-http": isValidAnyUrl(config.httpUrl),
+    "malware-download": isValidHttpsUrl(config.eicarUrl),
+    "bad-certificate": isValidHttpsUrl(config.badCertUrl),
     "safe-traffic": isValidHttpsUrl(config.safeTrafficUrl),
     stop: true,
   };
@@ -169,12 +222,20 @@ export function getDestination(id: ScenarioId, config: LabConfig): string {
   switch (id) {
     case "phishing":
       return config.phishingUrl;
+    case "malware-url":
+      return config.malwareUrl;
     case "malicious-domain":
       return config.maliciousDomain;
     case "suspicious-connection":
       return config.suspiciousUrl;
     case "redirect":
       return config.redirectUrl;
+    case "unencrypted-http":
+      return config.httpUrl;
+    case "malware-download":
+      return config.eicarUrl;
+    case "bad-certificate":
+      return config.badCertUrl;
     case "safe-traffic":
       return config.safeTrafficUrl;
     case "stop":

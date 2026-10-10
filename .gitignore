@@ -86,3 +86,6 @@ credentials.json
 # .env files are intentionally NOT ignored — they contain placeholder values
 # that are automatically updated by the Emergent deployment system.
 # Do NOT add .env / .env.* rules here.
+.env
+.env.*
+*.env
